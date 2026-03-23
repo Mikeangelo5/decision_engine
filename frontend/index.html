@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loan Decision Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="wordmark">
+          <div class="wordmark-icon">
+            <svg viewBox="0 0 16 16">
+              <path d="M2 12 L8 4 L14 12" />
+              <path d="M5 8.5 L11 8.5" />
+            </svg>
+          </div>
+          <span class="wordmark-text">Decision Engine</span>
+        </div>
+        <h1>Loan <span>eligibility</span><br />in seconds.</h1>
+      </header>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-label">Application</div>
+        </div>
+
+        <form id="loanForm">
+          <div class="field">
+            <div class="field-label">
+              <span class="field-label-text">Personal code</span>
+            </div>
+            <input
+              type="text"
+              id="personalCode"
+              placeholder="49002010987"
+              required
+            />
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-value-row">
+              <span class="field-label-text">Loan amount</span>
+              <div class="slider-input-wrap">
+                <input
+                  type="number"
+                  id="loanAmountInput"
+                  class="slider-number-input"
+                  min="2000"
+                  max="10000"
+                  step="100"
+                  value="2000"
+                />
+                <span class="slider-input-unit">€</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              id="loanAmount"
+              min="2000"
+              max="10000"
+              step="100"
+              value="2000"
+            />
+            <div class="slider-bounds">
+              <span>2,000 €</span>
+              <span>10,000 €</span>
+            </div>
+          </div>
+
+          <div class="slider-field">
+            <div class="slider-value-row">
+              <span class="field-label-text">Loan period</span>
+              <div class="slider-input-wrap">
+                <input
+                  type="number"
+                  id="loanPeriodInput"
+                  class="slider-number-input"
+                  min="12"
+                  max="60"
+                  step="1"
+                  value="12"
+                />
+                <span class="slider-input-unit">mo</span>
+              </div>
+            </div>
+            <input
+              type="range"
+              id="loanPeriod"
+              min="12"
+              max="60"
+              step="1"
+              value="12"
+            />
+            <div class="slider-bounds">
+              <span>12 mo</span>
+              <span>60 mo</span>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <button type="submit" id="submitBtn">Check eligibility</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="test-data">
+          <div class="card-label">Test codes — click to fill</div>
+          <div class="test-codes">
+            <div class="test-code-row" data-code="49002010965">
+              <span class="test-code-value">49002010965</span>
+              <span class="test-code-badge badge-debt">Debt</span>
+            </div>
+            <div class="test-code-row" data-code="49002010976">
+              <span class="test-code-value">49002010976</span>
+              <span class="test-code-badge badge-s1">Segment 1 · ×100</span>
+            </div>
+            <div class="test-code-row" data-code="49002010987">
+              <span class="test-code-value">49002010987</span>
+              <span class="test-code-badge badge-s2">Segment 2 · ×300</span>
+            </div>
+            <div class="test-code-row" data-code="49002010998">
+              <span class="test-code-value">49002010998</span>
+              <span class="test-code-badge badge-s3">Segment 3 · ×1000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="result" class="card hidden"></div>
+    </div>
+
+    <script src="./app.js"></script>
+    <script>
+      function syncPair(sliderId, inputId, min, max) {
+        const slider = document.getElementById(sliderId);
+        const input = document.getElementById(inputId);
+
+        slider.addEventListener("input", () => {
+          input.value = slider.value;
+        });
+
+        input.addEventListener("input", () => {
+          const v = parseInt(input.value, 10);
+          if (!isNaN(v) && v >= min && v <= max) {
+            slider.value = v;
+          }
+        });
+
+        input.addEventListener("blur", () => {
+          let v = parseInt(input.value, 10);
+          if (isNaN(v) || v < min) v = min;
+          if (v > max) v = max;
+          input.value = v;
+          slider.value = v;
+        });
+      }
+
+      syncPair("loanAmount", "loanAmountInput", 2000, 10000);
+      syncPair("loanPeriod", "loanPeriodInput", 12, 60);
+
+      document.querySelectorAll(".test-code-row").forEach((row) => {
+        row.addEventListener("click", () => {
+          document.getElementById("personalCode").value = row.dataset.code;
+          document.getElementById("personalCode").focus();
+        });
+      });
+
+      const btn = document.getElementById("submitBtn");
+
+      document.getElementById("loanForm").addEventListener("submit", () => {
+        btn.classList.add("loading");
+        btn.textContent = "Checking…";
+      });
+
+      new MutationObserver(() => {
+        if (!document.getElementById("result").classList.contains("hidden")) {
+          btn.classList.remove("loading");
+          btn.textContent = "Check eligibility";
+        }
+      }).observe(document.getElementById("result"), {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    </script>
+  </body>
+</html>
